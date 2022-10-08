@@ -89,18 +89,22 @@ def merge_setting(request_setting, session_setting, dict_class=OrderedDict):
 
 
 def merge_hooks(request_hooks, session_hooks, dict_class=OrderedDict):
-    """Properly merges both requests and session hooks.
-
-    This is necessary because when request_hooks == {'response': []}, the
-    merge breaks Session hooks entirely.
+    """ Merges request and session hooks. If both request and session set callables
+    for a given hook, session hooks are overridden.
     """
-    if session_hooks is None or session_hooks.get("response") == []:
+    if session_hooks is None:
         return request_hooks
 
-    if request_hooks is None or request_hooks.get("response") == []:
+    if request_hooks is None:
         return session_hooks
 
-    return merge_setting(request_hooks, session_hooks, dict_class)
+    hooks = default_hooks()
+    for k in hooks:
+        s_v = session_hooks.get(k, None)
+        r_v = request_hooks.get(k, None)
+        hooks[k] = r_v if r_v else s_v
+
+    return dict_class(to_key_val_list(hooks))
 
 
 class SessionRedirectMixin:
